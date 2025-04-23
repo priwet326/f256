@@ -14,6 +14,7 @@ const uint16_t IR_POLY = 0x11B;
 // Умножение двух чисел в GF(256) с редукцией
 
 uint8_t gf256_mul_and_div(uint8_t a, uint8_t b) {
+  // Сначала обычное умножение
   bool massBit[15] = {0};
 
   massBit[0] = (((a >> 0) & 1) & ((b >> 0) & 1));
@@ -80,14 +81,13 @@ uint8_t gf256_mul_and_div(uint8_t a, uint8_t b) {
   massBit[13] = (((a >> 7) & 1) & ((b >> 6) & 1)) ^
     (((a >> 6) & 1) & ((b >> 7) & 1));
   massBit[14] = (((a >> 7) & 1) & ((b >> 7) & 1));
-
+  // Теперь деление получившегося многочлена с остатком на неприводимый
   uint16_t poly = 0;
   for (int i = 0; i < 15; ++i) {
     if (massBit[i]) {
       poly |= (1 << i);  // Устанавливаем бит, если коэффициент = 1
     }
   }
-  /* printf("%0b  aaa\n", poly); */
   for (int i = 14; i >= 8; --i) {
     if (poly & (1 << i)) {
       poly ^= (IR_POLY << (i - 8));
@@ -97,22 +97,7 @@ uint8_t gf256_mul_and_div(uint8_t a, uint8_t b) {
   return (uint8_t)poly;
 }
 
-/*
-uint8_t gf256_mul_and_div(uint8_t a, uint8_t b) {
-    uint8_t result = 0;
-    for (int i = 0; i < 8; i++) {
-        if (b & 1)
-            result ^= a;
-        bool carry = (a & 0x80); // Проверяем старший бит (x^7)
-        a <<= 1;
-        if (carry)
-            a ^= 0x1B; // Редукция: x^8 = x^4 + x^3 + x + 1 (0x1B)
-        b >>= 1;
-    }
-    return result;
-}
-*/
-
+// Нахождение наивысшей степени многочлена
 int gf256_degree(uint16_t p) {
     for (int i = 15; i >= 0; i--) {
         if (p & (1 << i))
@@ -121,6 +106,7 @@ int gf256_degree(uint16_t p) {
     return -1;
 }
 
+// Нахождение обратного элемента
 uint8_t gf256_inv(uint8_t a) {
     if (a == 0) return 0;
 
@@ -144,46 +130,28 @@ uint8_t gf256_inv(uint8_t a) {
 
     return static_cast<uint8_t>(s0);  // <-- Правильно!
 }
-/*
+
+// Функция шифрования
 vector<uint8_t> decryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1){
   size_t size = input.size();
   vector<uint8_t> output(size);
-
+  // Шифровка первых двух символов
   output[0] = gf256_mul_and_div(input[0] ^ b0, gf256_inv(a0));
   output[1] = gf256_mul_and_div(input[1] ^ b1, gf256_inv(a1));
 
   for(int i = 2; i < size; i += 2){
-    a0 = gf256_mul_and_div(a1, a0);
-    b0 = gf256_mul_and_div(b1, b0);
-    output[i] = gf256_mul_and_div(input[i] ^ b0, gf256_inv(a0));
-    a1 = gf256_mul_and_div(a0, a1);
-    b1 = gf256_mul_and_div(b0, b1);
-    output[i+1] = gf256_mul_and_div(input[i+1] ^ b0, gf256_inv(a0));
-  }
-  if(size % 2){
-    a0 = gf256_mul_and_div(a1, a0);
-    b0 = gf256_mul_and_div(b1, b0);
-    output[size - 1] = gf256_mul_and_div(input[size - 1] ^ b0, gf256_inv(a0));
-  }
-
-  return output;
-}
-*/
-
-vector<uint8_t> decryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1){
-  size_t size = input.size();
-  vector<uint8_t> output(size);
-
-  output[0] = gf256_mul_and_div(input[0] ^ b0, gf256_inv(a0));
-  output[1] = gf256_mul_and_div(input[1] ^ b1, gf256_inv(a1));
-
-  for(int i = 2; i < size; i += 2){
+    // Просчет следующих a и b
     uint8_t next_a0 = gf256_mul_and_div(a1, a0);
     uint8_t next_b0 = gf256_mul_and_div(b1, b0);
+
+    // Шифрование символа
     output[i] = gf256_mul_and_div(input[i] ^ next_b0, gf256_inv(next_a0));
 
+    // Просчет следующих a и b
     uint8_t next_a1 = gf256_mul_and_div(next_a0, a1);
     uint8_t next_b1 = gf256_mul_and_div(next_b0, b1);
+
+    // Шифрование символа
     output[i+1] = gf256_mul_and_div(input[i+1] ^ next_b1, gf256_inv(next_a1));
 
     a0 = next_a0;
@@ -192,6 +160,7 @@ vector<uint8_t> decryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_
     b1 = next_b1;
   }
 
+  // Выполняется шифрование последнего символа если кол-во нечетное
   if(size % 2){
     a0 = gf256_mul_and_div(a1, a0);
     b0 = gf256_mul_and_div(b1, b0);
@@ -201,22 +170,31 @@ vector<uint8_t> decryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_
   return output;
 }
 
-
+// Функция дешифрования
 vector<uint8_t> encryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1){
   size_t size = input.size();
   vector<uint8_t> output(size);
 
+  // Дешифровка первых двух символов
   output[0] = (gf256_mul_and_div(a0, input[0]) ^ b0);
   output[1] = (gf256_mul_and_div(a1, input[1]) ^ b1);
 
   for(int i = 2; i < size; i += 2){
+    // Просчет следующих a и b
     a0 = gf256_mul_and_div(a1, a0);
     b0 = gf256_mul_and_div(b1, b0);
+
+    // Дешифрование символа
     output[i]= (gf256_mul_and_div(input[i], a0) ^ b0);
+
+    // Просчет следующих a и b
     a1 = gf256_mul_and_div(a0, a1);
     b1 = gf256_mul_and_div(b0, b1);
+
+    // Дешифрование символа
     output[i + 1]= (gf256_mul_and_div(input[i + 1], a1) ^ b1);
   }
+  // Выполняется дешифрование последнего символа если кол-во нечетное
   if(size % 2){
     a0 = gf256_mul_and_div(a1, a0);
     b0 = gf256_mul_and_div(b1, b0);
@@ -226,30 +204,7 @@ vector<uint8_t> encryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_
   return output;
 }
 
-// --- ФУНКЦИИ ДЛЯ РАБОТЫ С ФАЙЛАМИ ---
-/*
-// Чтение файла как массива байт
-vector<uint8_t> read_file(const string& filename) {
-  ifstream file(filename, ios::binary);
-  return vector<uint8_t>(
-      (istreambuf_iterator<char>(file)),
-      istreambuf_iterator<char>()
-      );
-}
-
-// Запись массива байт в файл
-void write_file(const string& filename, const vector<uint8_t>& data) {
-  ofstream file(filename, ios::binary);
-  file.write(reinterpret_cast<const char*>(data.data()), data.size());
-}
-*/
-void print_as_string(const std::vector<uint8_t>& data) {
-  for (uint8_t byte : data) {
-    std::cout << static_cast<char>(byte);
-  }
-  std::cout << std::endl;
-}
-
+// Чтение из файла в бинарном режиме (без пояснения)
 vector<uint8_t> read_file(const string& filename) {
     ifstream file(filename, ios::binary | ios::ate);
     if (!file) {
@@ -269,7 +224,7 @@ vector<uint8_t> read_file(const string& filename) {
     return buffer;
 }
 
-// Запись массива байт в файл с обработкой ошибок
+// Запись массива байт в файл с обработкой ошибок (без пояснения)
 void write_file(const string& filename, const vector<uint8_t>& data) {
     ofstream file(filename, ios::binary);
     if (!file) {
@@ -284,22 +239,24 @@ void write_file(const string& filename, const vector<uint8_t>& data) {
 }
 
 int main() {
+  // Желательно для правильного распознавания байтов
   setlocale(LC_ALL, "ru_RU.UTF-8");
+
+  // Чтение файла с определённым именем
   vector<uint8_t> input1 = read_file("input.txt");
-  print_as_string(input1);
+
+  // Задаётся ключ
   uint8_t a0 = 4;
   uint8_t a1 = 35;
   uint8_t b0 = 145;
   uint8_t b1 = 246;
+
+  // Файл шифруется в другой файл
   vector<uint8_t> output1 = encryption(input1, a0, a1, b0, b1);
   write_file("encryption.txt", output1);
-  print_as_string(read_file("encryption.txt"));
 
+  // Файл расшифровывается
   vector<uint8_t> input2 = read_file("encryption.txt");
   vector<uint8_t> output2 = decryption(input2, a0, a1, b0, b1);
   write_file("decryption.txt", output2);
-  print_as_string(read_file("decryption.txt"));
-  /* printf("%0b \n", (uint8_t)45); */
-  /* printf("%0b \n", gf256_inv((uint8_t)45)); */
-  /* printf("%0b \n", gf256_mul_and_div((uint8_t)45, gf256_inv((uint8_t)45))); */
 }

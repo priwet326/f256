@@ -132,7 +132,7 @@ uint8_t gf256_inv(uint8_t a) {
 }
 
 // Функция шифрования
-vector<uint8_t> decryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1){
+vector<uint8_t> encryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1){
   size_t size = input.size();
   vector<uint8_t> output(size);
   // Шифровка первых двух символов
@@ -171,7 +171,7 @@ vector<uint8_t> decryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_
 }
 
 // Функция дешифрования
-vector<uint8_t> encryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1){
+vector<uint8_t> decryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1){
   size_t size = input.size();
   vector<uint8_t> output(size);
 

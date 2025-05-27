@@ -131,11 +131,11 @@ uint8_t gf256_inv(uint8_t a) {
     return static_cast<uint8_t>(s0);  // <-- Правильно!
 }
 
-// Функция шифрования
-vector<uint8_t> encryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1){
+// Функция дешифрования
+vector<uint8_t> decryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1){
   size_t size = input.size();
   vector<uint8_t> output(size);
-  // Шифровка первых двух символов
+  // Дешифровка первых двух символов
   output[0] = gf256_mul_and_div(input[0] ^ b0, gf256_inv(a0));
   output[1] = gf256_mul_and_div(input[1] ^ b1, gf256_inv(a1));
 
@@ -144,14 +144,14 @@ vector<uint8_t> encryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_
     uint8_t next_a0 = gf256_mul_and_div(a1, a0);
     uint8_t next_b0 = gf256_mul_and_div(b1, b0);
 
-    // Шифрование символа
+    // Дешифрование символа
     output[i] = gf256_mul_and_div(input[i] ^ next_b0, gf256_inv(next_a0));
 
     // Просчет следующих a и b
     uint8_t next_a1 = gf256_mul_and_div(next_a0, a1);
     uint8_t next_b1 = gf256_mul_and_div(next_b0, b1);
 
-    // Шифрование символа
+    // Дешифрование символа
     output[i+1] = gf256_mul_and_div(input[i+1] ^ next_b1, gf256_inv(next_a1));
 
     a0 = next_a0;
@@ -160,7 +160,7 @@ vector<uint8_t> encryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_
     b1 = next_b1;
   }
 
-  // Выполняется шифрование последнего символа если кол-во нечетное
+  // Выполняется дешифрование последнего символа если кол-во нечетное
   if(size % 2){
     a0 = gf256_mul_and_div(a1, a0);
     b0 = gf256_mul_and_div(b1, b0);
@@ -170,12 +170,12 @@ vector<uint8_t> encryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_
   return output;
 }
 
-// Функция дешифрования
-vector<uint8_t> decryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1){
+// Функция шифрования
+vector<uint8_t> encryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1){
   size_t size = input.size();
   vector<uint8_t> output(size);
 
-  // Дешифровка первых двух символов
+  // Шифровка первых двух символов
   output[0] = (gf256_mul_and_div(a0, input[0]) ^ b0);
   output[1] = (gf256_mul_and_div(a1, input[1]) ^ b1);
 
@@ -184,17 +184,17 @@ vector<uint8_t> decryption(vector<uint8_t> input, uint8_t a0, uint8_t a1, uint8_
     a0 = gf256_mul_and_div(a1, a0);
     b0 = gf256_mul_and_div(b1, b0);
 
-    // Дешифрование символа
+    // Шифрование символа
     output[i]= (gf256_mul_and_div(input[i], a0) ^ b0);
 
     // Просчет следующих a и b
     a1 = gf256_mul_and_div(a0, a1);
     b1 = gf256_mul_and_div(b0, b1);
 
-    // Дешифрование символа
+    // Шифрование символа
     output[i + 1]= (gf256_mul_and_div(input[i + 1], a1) ^ b1);
   }
-  // Выполняется дешифрование последнего символа если кол-во нечетное
+  // Выполняется шифрование последнего символа если кол-во нечетное
   if(size % 2){
     a0 = gf256_mul_and_div(a1, a0);
     b0 = gf256_mul_and_div(b1, b0);
